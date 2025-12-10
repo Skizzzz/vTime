@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marion FH Time Lapse - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0f1419;
+            color: #e7e9ea;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #2f3336;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .editable-title {
+            cursor: pointer;
+            padding: 4px 8px;
+            margin: -4px -8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .editable-title:hover {
+            background: #1e2125;
+        }
+
+        .editable-title:hover::after {
+            content: ' \270E';
+            font-size: 0.8em;
+            color: #71767b;
+        }
+
+        .title-input {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: #1e2125;
+            border: 1px solid #1d9bf0;
+            border-radius: 8px;
+            color: #e7e9ea;
+            padding: 4px 8px;
+            outline: none;
+            width: 300px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00ba7c;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.error {
+            background: #f4212e;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .btn {
+            background: #1d9bf0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: #1a8cd8;
+        }
+
+        .btn:disabled {
+            background: #536471;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid #536471;
+            color: #e7e9ea;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(239, 243, 244, 0.1);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-success {
+            background: #00ba7c;
+        }
+
+        .btn-success:hover {
+            background: #00a06a;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: #16181c;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #2f3336;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #2f3336;
+            padding-bottom: 12px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: #71767b;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: #1e2125;
+            color: #e7e9ea;
+        }
+
+        .tab.active {
+            background: #1d9bf01a;
+            color: #1d9bf0;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Latest Snapshot */
+        .latest-snapshot {
+            margin-bottom: 24px;
+        }
+
+        .snapshot-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .snapshot-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .snapshot-time {
+            font-size: 0.9rem;
+            color: #71767b;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #1e2125;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1d9bf0;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #71767b;
+            margin-top: 4px;
+        }
+
+        .stat-card.success .stat-value {
+            color: #00ba7c;
+        }
+
+        .stat-card.warning .stat-value {
+            color: #ffd400;
+        }
+
+        .stat-card.error .stat-value {
+            color: #f4212e;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 16px 0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #71767b;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #2f3336;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1d9bf0, #00ba7c);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #ffd400, #f4212e);
+        }
+
+        /* Date List */
+        .date-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .date-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .date-item:hover {
+            background: #1e2125;
+        }
+
+        .date-item.active {
+            background: #1d9bf01a;
+            border: 1px solid #1d9bf0;
+        }
+
+        .date-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .date-name {
+            font-weight: 500;
+        }
+
+        .date-meta {
+            font-size: 0.8rem;
+            color: #71767b;
+        }
+
+        /* Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .gallery-item {
+            aspect-ratio: 4/3;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            background: #000;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 20px rgba(29, 155, 240, 0.3);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 90vw;
+            max-height: 90vh;
+            position: relative;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 8px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        .modal-info {
+            text-align: center;
+            margin-top: 12px;
+            color: #71767b;
+        }
+
+        /* Config Modal */
+        .config-modal {
+            background: #16181c;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #e7e9ea;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background: #1e2125;
+            border: 1px solid #2f3336;
+            border-radius: 8px;
+            color: #e7e9ea;
+            font-size: 0.95rem;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #1d9bf0;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #2f3336;
+        }
+
+        /* FTP Section */
+        .ftp-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: #1e2125;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .ftp-status-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .ftp-status-icon.connected {
+            background: #00ba7c;
+        }
+
+        .ftp-status-icon.disconnected {
+            background: #f4212e;
+        }
+
+        .ftp-status-icon.unknown {
+            background: #71767b;
+        }
+
+        .ftp-info {
+            font-size: 0.9rem;
+        }
+
+        .ftp-info strong {
+            color: #e7e9ea;
+        }
+
+        .ftp-info span {
+            color: #71767b;
+        }
+
+        .upload-stats-table {
+            width: 100%;
+            font-size: 0.85rem;
+        }
+
+        .upload-stats-table th, .upload-stats-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #2f3336;
+        }
+
+        .upload-stats-table th {
+            color: #71767b;
+            font-weight: 500;
+        }
+
+        .upload-stats-table td {
+            color: #e7e9ea;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #00ba7c33;
+            color: #00ba7c;
+        }
+
+        .badge-warning {
+            background: #ffd40033;
+            color: #ffd400;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #2f3336;
+            border-top-color: #1d9bf0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .spinner-small {
+            width: 16px;
+            height: 16px;
+            border-width: 2px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1d9bf0;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1001;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: #f4212e;
+        }
+
+        .toast.success {
+            background: #00ba7c;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #16181c;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2f3336;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #536471;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: #1e2125;
+            border: 1px solid #2f3336;
+            color: #e7e9ea;
+            cursor: pointer;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #2f3336;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-info {
+            padding: 8px 16px;
+            color: #71767b;
+        }
+
+        /* Remote folder list */
+        .remote-folders {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .remote-folder {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-bottom: 1px solid #2f3336;
+        }
+
+        .remote-folder:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="projectTitle" class="editable-title" onclick="editTitle()" title="Click to edit">Marion FH Time Lapse</h1>
+            <div class="header-actions">
+                <div class="status-dot" id="statusDot" title="System Running"></div>
+                <span id="lastUpdate" style="color: #71767b; font-size: 0.9rem;">--</span>
+                <button class="btn" id="takeSnapshotBtn" onclick="takeSnapshot()">Take Snapshot</button>
+                <button class="btn btn-secondary" onclick="refreshAll()">Refresh</button>
+            </div>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('overview')">Overview</button>
+            <button class="tab" onclick="switchTab('ftp')">FTP Uploads</button>
+            <button class="tab" onclick="switchTab('gallery')">Gallery</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="tab-overview" class="tab-content active">
+            <div class="dashboard-grid">
+                <main>
+                    <!-- Latest Snapshot -->
+                    <div class="card latest-snapshot">
+                        <div class="card-header">
+                            <h2 class="card-title">Latest Snapshot</h2>
+                            <span id="latestTime" class="snapshot-time">--</span>
+                        </div>
+                        <div class="snapshot-container">
+                            <img id="latestImage" src="/api/latest" alt="Latest snapshot" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22><rect fill=%22%23000%22 width=%22100%%22 height=%22100%%22/><text fill=%22%23666%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22>No snapshot available</text></svg>'">
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card success">
+                            <div class="stat-value" id="todayCount">--</div>
+                            <div class="stat-label">Snapshots Today</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="captureRate">--</div>
+                            <div class="stat-label">Capture Rate %</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalDays">--</div>
+                            <div class="stat-label">Days Archived</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalSnapshots">--</div>
+                            <div class="stat-label">Total Snapshots</div>
+                        </div>
+                    </div>
+
+                    <!-- Disk Usage -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Storage</h2>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span id="diskUsed">-- GB used</span>
+                                <span id="diskFree">-- GB free</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="diskProgress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; color: #71767b; font-size: 0.85rem; margin-top: 8px;">
+                            <span>Archive size: <strong id="archiveSize">-- MB</strong></span>
+                            <span>Retention: <strong id="retentionDays">-- days</strong></span>
+                        </div>
+                    </div>
+                </main>
+
+                <aside>
+                    <!-- Quick FTP Status -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">FTP Status</h2>
+                            <button class="btn btn-small btn-secondary" onclick="switchTab('ftp')">Details</button>
+                        </div>
+                        <div class="ftp-status">
+                            <div class="ftp-status-icon unknown" id="ftpStatusIcon"></div>
+                            <div class="ftp-info">
+                                <strong id="ftpHost">--</strong>
+                                <span id="ftpStatusText">Checking...</span>
+                            </div>
+                        </div>
+                        <div class="stats-grid" style="margin-bottom: 0;">
+                            <div class="stat-card" style="padding: 12px;">
+                                <div class="stat-value" style="font-size: 1.4rem;" id="ftpUploaded">--</div>
+                                <div class="stat-label">Uploaded</div>
+                            </div>
+                            <div class="stat-card warning" style="padding: 12px;">
+                                <div class="stat-value" style="font-size: 1.4rem;" id="ftpPending">--</div>
+                                <div class="stat-label">Pending</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Selector -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Browse Dates</h2>
+                        </div>
+                        <div class="date-list" id="dateList">
+                            <div class="loading"><div class="spinner"></div></div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- FTP Tab -->
+        <div id="tab-ftp" class="tab-content">
+            <div class="dashboard-grid">
+                <main>
+                    <!-- FTP Connection Status -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">FTP Connection</h2>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-small btn-secondary" onclick="testFtpConnection()">Test Connection</button>
+                                <button class="btn btn-small" onclick="openFtpConfig()">Configure</button>
+                            </div>
+                        </div>
+                        <div class="ftp-status" id="ftpConnectionStatus">
+                            <div class="ftp-status-icon unknown" id="ftpConnectionIcon"></div>
+                            <div class="ftp-info">
+                                <strong id="ftpConnectionHost">--</strong><br>
+                                <span id="ftpConnectionInfo">Click "Test Connection" to check</span>
+                            </div>
+                        </div>
+                        <div id="ftpServerInfo" style="display: none; margin-top: 12px; padding: 12px; background: #1e2125; border-radius: 8px; font-size: 0.85rem;">
+                            <div style="color: #71767b; margin-bottom: 4px;">Server Response:</div>
+                            <div id="ftpServerMessage" style="color: #00ba7c; font-family: monospace;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Statistics -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Upload Statistics (Last 7 Days)</h2>
+                            <button class="btn btn-small btn-success" onclick="triggerUpload()">Upload Now</button>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card success">
+                                <div class="stat-value" id="ftpTotalUploaded">--</div>
+                                <div class="stat-label">Total Uploaded</div>
+                            </div>
+                            <div class="stat-card warning">
+                                <div class="stat-value" id="ftpTotalPending">--</div>
+                                <div class="stat-label">Pending Upload</div>
+                            </div>
+                        </div>
+                        <table class="upload-stats-table" id="uploadStatsTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Total</th>
+                                    <th>Uploaded</th>
+                                    <th>Pending</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uploadStatsBody">
+                                <tr><td colspan="5" style="text-align: center; color: #71767b;">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Remote Server Status -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Remote Server Content</h2>
+                            <button class="btn btn-small btn-secondary" onclick="loadRemoteStatus()">Refresh</button>
+                        </div>
+                        <div id="remoteStatusContent">
+                            <div style="color: #71767b; text-align: center; padding: 20px;">Click refresh to load remote content</div>
+                        </div>
+                    </div>
+                </main>
+
+                <aside>
+                    <!-- FTP Configuration Summary -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Current Configuration</h2>
+                        </div>
+                        <div id="ftpConfigSummary" style="font-size: 0.9rem;">
+                            <div style="padding: 8px 0; border-bottom: 1px solid #2f3336;">
+                                <span style="color: #71767b;">Host:</span>
+                                <span id="configHost" style="float: right;">--</span>
+                            </div>
+                            <div style="padding: 8px 0; border-bottom: 1px solid #2f3336;">
+                                <span style="color: #71767b;">Port:</span>
+                                <span id="configPort" style="float: right;">--</span>
+                            </div>
+                            <div style="padding: 8px 0; border-bottom: 1px solid #2f3336;">
+                                <span style="color: #71767b;">User:</span>
+                                <span id="configUser" style="float: right;">--</span>
+                            </div>
+                            <div style="padding: 8px 0; border-bottom: 1px solid #2f3336;">
+                                <span style="color: #71767b;">Remote Path:</span>
+                                <span id="configRemotePath" style="float: right;">--</span>
+                            </div>
+                            <div style="padding: 8px 0; border-bottom: 1px solid #2f3336;">
+                                <span style="color: #71767b;">Passive Mode:</span>
+                                <span id="configPassive" style="float: right;">--</span>
+                            </div>
+                            <div style="padding: 8px 0;">
+                                <span style="color: #71767b;">Upload Interval:</span>
+                                <span id="configInterval" style="float: right;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- Gallery Tab -->
+        <div id="tab-gallery" class="tab-content">
+            <div class="dashboard-grid">
+                <main>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Gallery - <span id="galleryDate">Today</span></h2>
+                        </div>
+                        <div id="galleryContainer">
+                            <div class="gallery-grid" id="galleryGrid">
+                                <!-- Images loaded dynamically -->
+                            </div>
+                            <div class="pagination" id="pagination" style="display: none;">
+                                <button id="prevPage" onclick="changePage(-1)">Previous</button>
+                                <span class="page-info" id="pageInfo">Page 1 of 1</span>
+                                <button id="nextPage" onclick="changePage(1)">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <aside>
+                    <!-- Date Selector for Gallery -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Select Date</h2>
+                        </div>
+                        <div class="date-list" id="galleryDateList">
+                            <div class="loading"><div class="spinner"></div></div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal" id="imageModal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <img id="modalImage" src="" alt="Full size snapshot">
+            <div class="modal-info" id="modalInfo"></div>
+        </div>
+    </div>
+
+    <!-- FTP Config Modal -->
+    <div class="modal" id="ftpConfigModal" onclick="closeFtpConfig()">
+        <div class="config-modal" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom: 20px;">FTP Configuration</h2>
+            <form id="ftpConfigForm" onsubmit="saveFtpConfig(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Host</label>
+                        <input type="text" id="ftpFormHost" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Port</label>
+                        <input type="number" id="ftpFormPort" value="21" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="ftpFormUser" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="ftpFormPassword" placeholder="Leave blank to keep current">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Remote Root Directory</label>
+                    <input type="text" id="ftpFormRemoteRoot" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Passive Mode</label>
+                        <select id="ftpFormPassive">
+                            <option value="true">Enabled (Recommended)</option>
+                            <option value="false">Disabled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Upload Interval (minutes)</label>
+                        <input type="number" id="ftpFormInterval" min="1" max="1440" value="60" required>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeFtpConfig()">Cancel</button>
+                    <button type="submit" class="btn">Save Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // State
+        let currentDate = new Date().toISOString().split('T')[0];
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentTab = 'overview';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshAll();
+
+            // Auto-refresh every 30 seconds
+            setInterval(refreshStatus, 30000);
+            setInterval(() => {
+                document.getElementById('latestImage').src = '/api/latest?' + Date.now();
+            }, 60000);
+        });
+
+        // Tab switching
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            document.querySelector(`.tab:nth-child(${tab === 'overview' ? 1 : tab === 'ftp' ? 2 : 3})`).classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+
+            if (tab === 'ftp') {
+                loadFtpStatus();
+                loadFtpConfig();
+            } else if (tab === 'gallery') {
+                loadGalleryDates();
+                loadGallery(currentDate);
+            }
+        }
+
+        function refreshAll() {
+            refreshStatus();
+            loadDates();
+            loadFtpStatus();
+            if (currentTab === 'gallery') {
+                loadGallery(currentDate);
+            }
+        }
+
+        // API Functions
+        async function refreshStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                // Update project name/title
+                if (data.project_name) {
+                    document.getElementById('projectTitle').textContent = data.project_name;
+                    document.title = data.project_name + ' - Dashboard';
+                }
+
+                document.getElementById('lastUpdate').textContent = data.timestamp;
+                document.getElementById('todayCount').textContent = data.today.snapshots;
+                document.getElementById('captureRate').textContent = data.today.capture_rate + '%';
+                document.getElementById('totalDays').textContent = data.system.total_days;
+                document.getElementById('totalSnapshots').textContent = formatNumber(data.system.total_snapshots);
+
+                document.getElementById('diskUsed').textContent =
+                    (data.system.disk_total_gb - data.system.disk_free_gb).toFixed(1) + ' GB used';
+                document.getElementById('diskFree').textContent = data.system.disk_free_gb + ' GB free';
+                document.getElementById('diskProgress').style.width = data.system.disk_used_percent + '%';
+                document.getElementById('archiveSize').textContent = formatSize(data.system.total_size_mb);
+                document.getElementById('retentionDays').textContent = data.system.retention_days;
+
+                if (data.latest_snapshot) {
+                    const time = data.latest_snapshot.match(/snapshot_(\d{8})_(\d{6})/);
+                    if (time) {
+                        const h = time[2].slice(0,2), m = time[2].slice(2,4), s = time[2].slice(4,6);
+                        document.getElementById('latestTime').textContent = `${h}:${m}:${s}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching status:', error);
+            }
+        }
+
+        async function loadDates() {
+            try {
+                const response = await fetch('/api/dates');
+                const dates = await response.json();
+
+                const renderDateList = (containerId) => {
+                    const container = document.getElementById(containerId);
+                    if (!container) return;
+
+                    if (dates.length === 0) {
+                        container.innerHTML = '<p style="color: #71767b; text-align: center; padding: 20px;">No dates available</p>';
+                        return;
+                    }
+
+                    container.innerHTML = dates.map(d => `
+                        <div class="date-item ${d.date === currentDate ? 'active' : ''}"
+                             onclick="selectDate('${d.date}')">
+                            <div class="date-info">
+                                <span class="date-name">${formatDate(d.date)}</span>
+                                <span class="date-meta">${d.count} snapshots - ${formatSize(d.size_mb)}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                };
+
+                renderDateList('dateList');
+                renderDateList('galleryDateList');
+            } catch (error) {
+                console.error('Error loading dates:', error);
+            }
+        }
+
+        function loadGalleryDates() {
+            loadDates();
+        }
+
+        async function loadGallery(date, page = 1) {
+            currentDate = date;
+            currentPage = page;
+
+            document.getElementById('galleryDate').textContent = formatDate(date);
+            document.getElementById('galleryGrid').innerHTML = '<div class="loading" style="grid-column: 1/-1;"><div class="spinner"></div></div>';
+
+            try {
+                const response = await fetch(`/api/snapshots/${date}?page=${page}&per_page=30`);
+                const data = await response.json();
+
+                totalPages = data.total_pages;
+
+                const grid = document.getElementById('galleryGrid');
+                if (data.snapshots.length === 0) {
+                    grid.innerHTML = '<p style="color: #71767b; text-align: center; padding: 40px; grid-column: 1/-1;">No snapshots for this date</p>';
+                    document.getElementById('pagination').style.display = 'none';
+                    return;
+                }
+
+                grid.innerHTML = data.snapshots.map(s => `
+                    <div class="gallery-item" onclick="openModal('${date}', '${s.filename}', '${s.timestamp}')">
+                        <img src="/api/image/${date}/${s.filename}" alt="${s.timestamp}" loading="lazy">
+                    </div>
+                `).join('');
+
+                // Update pagination
+                const pagination = document.getElementById('pagination');
+                pagination.style.display = totalPages > 1 ? 'flex' : 'none';
+                document.getElementById('pageInfo').textContent = `Page ${page} of ${totalPages}`;
+                document.getElementById('prevPage').disabled = page <= 1;
+                document.getElementById('nextPage').disabled = page >= totalPages;
+
+                // Update date list active state
+                document.querySelectorAll('.date-item').forEach(item => {
+                    const nameEl = item.querySelector('.date-name');
+                    if (nameEl) {
+                        item.classList.toggle('active', nameEl.textContent === formatDate(date));
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading gallery:', error);
+                document.getElementById('galleryGrid').innerHTML =
+                    '<p style="color: #f4212e; text-align: center; padding: 40px; grid-column: 1/-1;">Error loading images</p>';
+            }
+        }
+
+        function selectDate(date) {
+            currentDate = date;
+            if (currentTab === 'gallery') {
+                loadGallery(date, 1);
+            }
+        }
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                loadGallery(currentDate, newPage);
+            }
+        }
+
+        async function takeSnapshot() {
+            const btn = document.getElementById('takeSnapshotBtn');
+            btn.disabled = true;
+            btn.textContent = 'Capturing...';
+
+            try {
+                const response = await fetch('/api/snapshot/take', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('Snapshot captured!', 'success');
+                    setTimeout(() => {
+                        document.getElementById('latestImage').src = '/api/latest?' + Date.now();
+                        refreshStatus();
+                        loadDates();
+                        if (currentTab === 'gallery' && currentDate === result.date) {
+                            loadGallery(currentDate, 1);
+                        }
+                    }, 500);
+                } else {
+                    showToast('Error: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showToast('Failed to take snapshot', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Take Snapshot';
+            }
+        }
+
+        // FTP Functions
+        async function loadFtpStatus() {
+            try {
+                const response = await fetch('/api/ftp/status');
+                const data = await response.json();
+
+                // Update overview FTP status
+                document.getElementById('ftpHost').textContent = data.config.host;
+                document.getElementById('ftpUploaded').textContent = formatNumber(data.uploads.total_uploaded);
+                document.getElementById('ftpPending').textContent = formatNumber(data.uploads.total_pending);
+
+                // Update FTP tab
+                document.getElementById('ftpTotalUploaded').textContent = formatNumber(data.uploads.total_uploaded);
+                document.getElementById('ftpTotalPending').textContent = formatNumber(data.uploads.total_pending);
+                document.getElementById('ftpConnectionHost').textContent = `${data.config.host}:${data.config.port}`;
+
+                // Update upload stats table
+                const tbody = document.getElementById('uploadStatsBody');
+                if (data.uploads.by_date.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #71767b;">No data available</td></tr>';
+                } else {
+                    tbody.innerHTML = data.uploads.by_date.map(d => `
+                        <tr>
+                            <td>${formatDate(d.date)}</td>
+                            <td>${d.total}</td>
+                            <td>${d.uploaded}</td>
+                            <td>${d.pending}</td>
+                            <td>${d.pending === 0
+                                ? '<span class="badge badge-success">Complete</span>'
+                                : '<span class="badge badge-warning">' + d.pending + ' pending</span>'}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading FTP status:', error);
+            }
+        }
+
+        async function loadFtpConfig() {
+            try {
+                const response = await fetch('/api/ftp/config');
+                const data = await response.json();
+
+                document.getElementById('configHost').textContent = data.host;
+                document.getElementById('configPort').textContent = data.port;
+                document.getElementById('configUser').textContent = data.user;
+                document.getElementById('configRemotePath').textContent = data.remote_root;
+                document.getElementById('configPassive').textContent = data.passive_mode ? 'Enabled' : 'Disabled';
+                document.getElementById('configInterval').textContent = data.upload_interval_minutes + ' min';
+
+                // Pre-fill form
+                document.getElementById('ftpFormHost').value = data.host;
+                document.getElementById('ftpFormPort').value = data.port;
+                document.getElementById('ftpFormUser').value = data.user;
+                document.getElementById('ftpFormRemoteRoot').value = data.remote_root;
+                document.getElementById('ftpFormPassive').value = data.passive_mode ? 'true' : 'false';
+                document.getElementById('ftpFormInterval').value = data.upload_interval_minutes;
+            } catch (error) {
+                console.error('Error loading FTP config:', error);
+            }
+        }
+
+        async function testFtpConnection() {
+            const icon = document.getElementById('ftpConnectionIcon');
+            const info = document.getElementById('ftpConnectionInfo');
+            const serverInfo = document.getElementById('ftpServerInfo');
+
+            icon.className = 'ftp-status-icon unknown';
+            info.textContent = 'Testing connection...';
+            serverInfo.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/ftp/test', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.success) {
+                    icon.className = 'ftp-status-icon connected';
+                    info.textContent = 'Connection successful';
+                    document.getElementById('ftpStatusIcon').className = 'ftp-status-icon connected';
+                    document.getElementById('ftpStatusText').textContent = 'Connected';
+
+                    if (result.server_info) {
+                        serverInfo.style.display = 'block';
+                        document.getElementById('ftpServerMessage').textContent = result.server_info;
+                    }
+                    showToast('FTP connection successful!', 'success');
+                } else {
+                    icon.className = 'ftp-status-icon disconnected';
+                    info.textContent = 'Connection failed: ' + result.message;
+                    document.getElementById('ftpStatusIcon').className = 'ftp-status-icon disconnected';
+                    document.getElementById('ftpStatusText').textContent = 'Disconnected';
+                    showToast('FTP connection failed', 'error');
+                }
+            } catch (error) {
+                icon.className = 'ftp-status-icon disconnected';
+                info.textContent = 'Error testing connection';
+                showToast('Error testing connection', 'error');
+            }
+        }
+
+        async function loadRemoteStatus() {
+            const container = document.getElementById('remoteStatusContent');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            try {
+                const response = await fetch('/api/ftp/remote');
+                const result = await response.json();
+
+                if (result.connected) {
+                    if (result.folders.length === 0) {
+                        container.innerHTML = '<div style="color: #71767b; text-align: center; padding: 20px;">No folders found on remote server</div>';
+                    } else {
+                        container.innerHTML = `
+                            <div style="margin-bottom: 12px; color: #71767b;">Total files: <strong style="color: #e7e9ea;">${result.total_files}</strong></div>
+                            <div class="remote-folders">
+                                ${result.folders.map(f => `
+                                    <div class="remote-folder">
+                                        <span>${f.name}</span>
+                                        <span style="color: #71767b;">${f.file_count} files</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                } else {
+                    container.innerHTML = `<div style="color: #f4212e; text-align: center; padding: 20px;">Connection failed: ${result.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                container.innerHTML = '<div style="color: #f4212e; text-align: center; padding: 20px;">Error loading remote status</div>';
+            }
+        }
+
+        async function triggerUpload() {
+            showToast('Starting upload...', '');
+
+            try {
+                const response = await fetch('/api/ftp/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast(`Upload complete: ${result.uploaded} new, ${result.skipped} already uploaded`, 'success');
+                    loadFtpStatus();
+                } else {
+                    showToast('Upload failed: ' + (result.errors[0] || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Error triggering upload', 'error');
+            }
+        }
+
+        function openFtpConfig() {
+            loadFtpConfig();
+            document.getElementById('ftpConfigModal').classList.add('active');
+        }
+
+        function closeFtpConfig() {
+            document.getElementById('ftpConfigModal').classList.remove('active');
+        }
+
+        async function saveFtpConfig(e) {
+            e.preventDefault();
+
+            const data = {
+                host: document.getElementById('ftpFormHost').value,
+                port: parseInt(document.getElementById('ftpFormPort').value),
+                user: document.getElementById('ftpFormUser').value,
+                password: document.getElementById('ftpFormPassword').value || '********',
+                remote_root: document.getElementById('ftpFormRemoteRoot').value,
+                passive_mode: document.getElementById('ftpFormPassive').value === 'true',
+                upload_interval_minutes: parseInt(document.getElementById('ftpFormInterval').value)
+            };
+
+            try {
+                const response = await fetch('/api/ftp/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('Configuration saved!', 'success');
+                    closeFtpConfig();
+                    loadFtpConfig();
+                    loadFtpStatus();
+                } else {
+                    showToast('Error: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showToast('Error saving configuration', 'error');
+            }
+        }
+
+        // Modal
+        function openModal(date, filename, timestamp) {
+            document.getElementById('modalImage').src = `/api/image/${date}/${filename}`;
+            document.getElementById('modalInfo').textContent = `${formatDate(date)} at ${timestamp}`;
+            document.getElementById('imageModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').classList.remove('active');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeFtpConfig();
+            }
+        });
+
+        // Toast
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Helpers
+        function formatDate(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (date.getTime() === today.getTime()) return 'Today';
+            if (date.getTime() === yesterday.getTime()) return 'Yesterday';
+
+            return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        function formatSize(mb) {
+            if (mb >= 1024) return (mb / 1024).toFixed(1) + ' GB';
+            return mb.toFixed(1) + ' MB';
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num;
+        }
+
+        // Title editing
+        function editTitle() {
+            const titleEl = document.getElementById('projectTitle');
+            const currentTitle = titleEl.textContent;
+
+            // Replace h1 with input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'title-input';
+            input.value = currentTitle;
+            input.id = 'titleInput';
+
+            titleEl.style.display = 'none';
+            titleEl.parentNode.insertBefore(input, titleEl);
+
+            input.focus();
+            input.select();
+
+            // Save on enter or blur
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    saveTitle(input.value);
+                } else if (e.key === 'Escape') {
+                    cancelTitleEdit();
+                }
+            });
+
+            input.addEventListener('blur', () => {
+                // Small delay to allow for click events
+                setTimeout(() => {
+                    if (document.getElementById('titleInput')) {
+                        saveTitle(input.value);
+                    }
+                }, 100);
+            });
+        }
+
+        async function saveTitle(newTitle) {
+            const input = document.getElementById('titleInput');
+            const titleEl = document.getElementById('projectTitle');
+
+            if (!newTitle.trim()) {
+                cancelTitleEdit();
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/project-name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newTitle.trim() })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    titleEl.textContent = result.name;
+                    document.title = result.name + ' - Dashboard';
+                    showToast('Project name saved!', 'success');
+                } else {
+                    showToast('Error saving name', 'error');
+                }
+            } catch (error) {
+                showToast('Error saving name', 'error');
+            }
+
+            // Restore h1
+            if (input) input.remove();
+            titleEl.style.display = '';
+        }
+
+        function cancelTitleEdit() {
+            const input = document.getElementById('titleInput');
+            const titleEl = document.getElementById('projectTitle');
+
+            if (input) input.remove();
+            titleEl.style.display = '';
+        }
+    </script>
+</body>
+</html>
