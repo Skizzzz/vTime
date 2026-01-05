@@ -13,8 +13,16 @@ A timelapse capture system with web dashboard for monitoring and managing IP cam
 ## Quick Start (Local)
 
 ```bash
+# Clone the repository
+git clone <repo-url>
+cd vTime
+
 # Install dependencies
-pip install flask requests
+pip install -r requirements.txt
+
+# Copy and configure settings
+cp dashboard_config.example.json dashboard_config.json
+# Edit dashboard_config.json with your camera URL, FTP settings, etc.
 
 # Run the dashboard
 python web_dashboard.py
@@ -42,10 +50,11 @@ This installs dependencies, creates `/home/<user>/timelapse`, and configures sys
 ### 3. Configure
 
 ```bash
+cp ~/timelapse/dashboard_config.example.json ~/timelapse/dashboard_config.json
 nano ~/timelapse/dashboard_config.json
 ```
 
-Edit RTSP URL, FTP credentials, and other settings.
+Edit RTSP URL, FTP credentials, Telegram settings, and other options.
 
 ### 4. Start services
 
@@ -71,7 +80,7 @@ Access dashboard at `http://<pi-ip>:5050`
 
 ## Configuration
 
-On first run, `dashboard_config.json` is created with defaults:
+Copy `dashboard_config.example.json` to `dashboard_config.json` and edit:
 
 ```json
 {
@@ -87,10 +96,22 @@ On first run, `dashboard_config.json` is created with defaults:
     "password": "ftppass",
     "remote_root": "/timelapse",
     "passive_mode": true,
-    "upload_interval": 3600
+    "upload_interval_minutes": 60
+  },
+  "telegram": {
+    "enabled": false,
+    "bot_token": "YOUR_BOT_TOKEN",
+    "chat_id": "YOUR_CHAT_ID",
+    "daily_report_hour": 8
   }
 }
 ```
+
+### Telegram Setup (Optional)
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
+2. Get your chat ID from [@userinfobot](https://t.me/userinfobot)
+3. Set `telegram.enabled` to `true` and fill in your credentials
 
 ## Dashboard Features
 

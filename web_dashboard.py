@@ -1,5 +1,5 @@
 """
-Marion FH Time Lapse - Web Dashboard
+vTime - Timelapse Web Dashboard
 A simple web interface for monitoring and managing the timelapse system.
 """
 
@@ -10,46 +10,51 @@ import os
 import shutil
 import subprocess
 import json
+import sys
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
 # === CONFIGURATION ===
 CONFIG_FILE = "./dashboard_config.json"
 DEFAULT_CONFIG = {
-    "project_name": "Marion FH Time Lapse",
-    "rtsp_url": "rtsps://192.168.32.1:7441/yjTFibCoG2JUm3rW?enableSrtp",
+    "project_name": "My Timelapse",
+    "rtsp_url": "rtsp://user:pass@camera-ip:554/stream",
     "base_output_dir": "./pics",
     "snapshot_interval": 60,
     "retention_days": 60,
     "ftp": {
-        "host": "172.239.57.159",
+        "host": "ftp.example.com",
         "port": 21,
-        "user": "jtftp",
-        "password": "MMTHuiTimeLapse32",
-        "remote_root": "files",
+        "user": "ftpuser",
+        "password": "ftppass",
+        "remote_root": "/timelapse",
         "passive_mode": True,
         "upload_interval_minutes": 60
     }
 }
 
 def load_config():
-    """Load configuration from file or return defaults"""
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r') as f:
-                config = json.load(f)
-                # Merge with defaults for any missing keys
-                for key in DEFAULT_CONFIG:
-                    if key not in config:
-                        config[key] = DEFAULT_CONFIG[key]
-                if 'ftp' in config:
-                    for key in DEFAULT_CONFIG['ftp']:
-                        if key not in config['ftp']:
-                            config['ftp'][key] = DEFAULT_CONFIG['ftp'][key]
-                return config
-        except:
-            pass
-    return DEFAULT_CONFIG.copy()
+    """Load configuration from file or exit with helpful message if missing"""
+    if not os.path.exists(CONFIG_FILE):
+        print(f"[ERROR] Config file not found: {CONFIG_FILE}")
+        print(f"Please copy dashboard_config.example.json to {CONFIG_FILE} and edit it.")
+        sys.exit(1)
+
+    try:
+        with open(CONFIG_FILE, 'r') as f:
+            config = json.load(f)
+            # Merge with defaults for any missing keys
+            for key in DEFAULT_CONFIG:
+                if key not in config:
+                    config[key] = DEFAULT_CONFIG[key]
+            if 'ftp' in config:
+                for key in DEFAULT_CONFIG['ftp']:
+                    if key not in config['ftp']:
+                        config['ftp'][key] = DEFAULT_CONFIG['ftp'][key]
+            return config
+    except json.JSONDecodeError as e:
+        print(f"[ERROR] Invalid JSON in {CONFIG_FILE}: {e}")
+        sys.exit(1)
 
 def save_config(config):
     """Save configuration to file"""
@@ -605,9 +610,9 @@ if __name__ == '__main__':
     os.makedirs('static', exist_ok=True)
 
     print("=" * 50)
-    print("Marion FH Time Lapse - Web Dashboard")
+    print(f"{get_project_name()} - Web Dashboard")
     print("=" * 50)
-    print(f"Starting server at http://localhost:5000")
+    print(f"Starting server at http://localhost:5050")
     print("=" * 50)
 
     app.run(host='0.0.0.0', port=5050, debug=True)

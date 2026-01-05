@@ -5,31 +5,51 @@ import os
 import shutil
 from ftplib import FTP
 import requests
+import json
 
 # === CONFIGURATION ===
 
-# RTSP Stream
-rtsp_url = "rtsps://192.168.32.1:7441/yjTFibCoG2JUm3rW?enableSrtp"
+CONFIG_FILE = "dashboard_config.json"
 
-# Snapshot setting
-snapshot_interval = 60  # seconds between snapshots
-base_output_dir = "./pics"
+def load_config():
+    """Load configuration from JSON file"""
+    if not os.path.exists(CONFIG_FILE):
+        print(f"[ERROR] Config file not found: {CONFIG_FILE}")
+        print(f"Please copy dashboard_config.example.json to {CONFIG_FILE} and edit it.")
+        exit(1)
+
+    with open(CONFIG_FILE, 'r') as f:
+        return json.load(f)
+
+config = load_config()
+
+# RTSP Stream
+rtsp_url = config.get("rtsp_url", "rtsp://user:pass@camera-ip:554/stream")
+
+# Snapshot settings
+snapshot_interval = config.get("snapshot_interval", 60)
+base_output_dir = config.get("base_output_dir", "./pics")
 
 # FTP Settings
-FTP_HOST = "172.239.57.159"
-FTP_USER = "jtftp"
-FTP_PASS = "MMTHuiTimeLapse32"
-REMOTE_ROOT = "files"  # corresponds to /files on the FTP server
+ftp_config = config.get("ftp", {})
+FTP_HOST = ftp_config.get("host", "")
+FTP_USER = ftp_config.get("user", "")
+FTP_PASS = ftp_config.get("password", "")
+REMOTE_ROOT = ftp_config.get("remote_root", "files")
 
 # Retention
-retention_days = 60
-upload_interval_minutes = 60  # Upload every hour
+retention_days = config.get("retention_days", 60)
+upload_interval_minutes = ftp_config.get("upload_interval_minutes", 60)
 
 # Telegram Settings
-TELEGRAM_BOT_TOKEN = "8148312070:AAGC1UJQLdjFROlVNoFqxp-1VpIa9Bi8cWs"  # Get from @BotFather
-TELEGRAM_CHAT_ID = "1549027514"      # Get from @userinfobot
-DAILY_REPORT_HOUR = 8  # Send daily report at 8:00 AM
-TELEGRAM_ENABLED = True  # Set to False to disable Telegram notifications
+telegram_config = config.get("telegram", {})
+TELEGRAM_BOT_TOKEN = telegram_config.get("bot_token", "")
+TELEGRAM_CHAT_ID = telegram_config.get("chat_id", "")
+DAILY_REPORT_HOUR = telegram_config.get("daily_report_hour", 8)
+TELEGRAM_ENABLED = telegram_config.get("enabled", False)
+
+# Project name for messages
+PROJECT_NAME = config.get("project_name", "Timelapse")
 
 # === FUNCTIONS ===
 
@@ -201,7 +221,7 @@ def send_daily_telegram_report():
         total_folders = 0
 
     # Build message
-    message = f"<b>📸 Marion FH Time Lapse - Daily Report</b>\n\n"
+    message = f"<b>📸 {PROJECT_NAME} - Daily Report</b>\n\n"
     message += f"<b>Date:</b> {yesterday}\n\n"
     message += f"<b>📊 Yesterday's Stats:</b>\n"
     message += f"• Snapshots captured: {stats['count']}\n"
@@ -334,7 +354,7 @@ def handle_telegram_command(command, current_output_dir):
             send_telegram_message(f"❌ Error capturing snapshot: {str(e)}")
 
     elif command in ["help", "/help", "/start"]:
-        help_msg = "<b>🤖 Marion FH Lapse Bot - Commands</b>\n\n"
+        help_msg = f"<b>🤖 {PROJECT_NAME} Bot - Commands</b>\n\n"
         help_msg += "<b>Available commands:</b>\n"
         help_msg += "• <code>status</code> - Get current system status with latest photo\n"
         help_msg += "• <code>photo</code> - Take and send a new snapshot immediately\n"
@@ -358,7 +378,7 @@ def test_telegram():
 
     # Test 1: Simple message
     print("Test 1: Sending test message...")
-    test_msg = "<b>🤖 Marion FH Lapse Bot Test</b>\n\n"
+    test_msg = f"<b>🤖 {PROJECT_NAME} Bot Test</b>\n\n"
     test_msg += "✅ Bot configuration successful!\n"
     test_msg += f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
     test_msg += "\nYour Telegram notifications are working correctly."
@@ -375,7 +395,7 @@ def test_telegram():
 # === MAIN LOOP ===
 
 # Send startup notification
-startup_msg = "<b>🚀 Marion FH Lapse Started</b>\n\n"
+startup_msg = f"<b>🚀 {PROJECT_NAME} Started</b>\n\n"
 startup_msg += "✅ Service started successfully\n"
 startup_msg += f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
 startup_msg += f"📸 Snapshot interval: {snapshot_interval} seconds\n"

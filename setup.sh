@@ -6,7 +6,7 @@
 # This script installs and configures:
 # - Python dependencies
 # - FFmpeg for camera capture
-# - Main timelapse capture service (Marion_FH_Lapse.py)
+# - Main timelapse capture service (timelapse.py)
 # - Web dashboard service (web_dashboard.py)
 # - Auto-start on boot via systemd
 # =============================================================================
@@ -57,11 +57,16 @@ mkdir -p "$INSTALL_DIR/templates"
 mkdir -p "$INSTALL_DIR/static"
 
 echo -e "${GREEN}[4/7]${NC} Copying application files..."
-cp "$SCRIPT_DIR/Marion_FH_Lapse.py" "$INSTALL_DIR/"
+cp "$SCRIPT_DIR/timelapse.py" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/web_dashboard.py" "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/templates/dashboard.html" "$INSTALL_DIR/templates/"
 
-# Copy config if it exists
+# Copy config template
+if [[ -f "$SCRIPT_DIR/dashboard_config.example.json" ]]; then
+    cp "$SCRIPT_DIR/dashboard_config.example.json" "$INSTALL_DIR/"
+fi
+
+# Copy user config if it exists (for upgrades)
 if [[ -f "$SCRIPT_DIR/dashboard_config.json" ]]; then
     cp "$SCRIPT_DIR/dashboard_config.json" "$INSTALL_DIR/"
 fi
@@ -86,7 +91,7 @@ Wants=network-online.target
 Type=simple
 User=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR
-ExecStart=$INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/Marion_FH_Lapse.py
+ExecStart=$INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/timelapse.py
 Restart=always
 RestartSec=30
 StandardOutput=journal
