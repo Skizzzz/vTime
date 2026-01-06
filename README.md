@@ -7,7 +7,8 @@ A timelapse capture system with web dashboard for monitoring and managing IP cam
 - **RTSP Camera Capture** - Automated snapshots from IP cameras via FFmpeg
 - **Web Dashboard** - Dark theme UI for monitoring, gallery browsing, and configuration
 - **FTP Upload** - Automatic backup to remote FTP server with upload tracking
-- **Telegram Integration** - Bot commands for remote status checks and photos
+- **Telegram Integration** - Bot commands for remote status checks, photos, and full config management
+- **Microsoft Teams Integration** - Scheduled webhook notifications with customizable messages
 - **Raspberry Pi Ready** - Systemd services with auto-start on boot
 
 ## Quick Start (Local)
@@ -104,6 +105,13 @@ Copy `dashboard_config.example.json` to `dashboard_config.json` and edit:
     "bot_token": "YOUR_BOT_TOKEN",
     "chat_id": "YOUR_CHAT_ID",
     "daily_report_hour": 8
+  },
+  "teams": {
+    "enabled": false,
+    "webhook_url": "https://outlook.office.com/webhook/YOUR_WEBHOOK_URL",
+    "message_template": "📸 {project_name} status: {count} snapshots today ({size_mb} MB). Disk: {disk_free_gb} GB free.",
+    "schedule_hours": [8, 12, 18],
+    "interval_minutes": 0
   }
 }
 ```
@@ -130,9 +138,67 @@ FTP is disabled by default - images are stored locally. Enable when ready to syn
 3. Send `/help` to your bot to verify it's working
 
 **Available bot commands:**
-- `/status` - Get current system status with latest photo
-- `/photo` - Take and send a snapshot immediately
-- `/help` - Show available commands
+
+| Command | Description |
+|---------|-------------|
+| `/status` | Get current system status with latest photo |
+| `/photo` | Take and send a snapshot immediately |
+| `/config` | View all current configuration settings |
+| `/set <key> <value>` | Modify any configuration setting |
+| `/reload` | Reload configuration from file |
+| `/teams` | View Teams webhook status |
+| `/teams test` | Send a test message to Teams |
+| `/help` | Show all available commands |
+
+**Configuration via Telegram:**
+
+You can modify all settings directly from Telegram using `/set`:
+
+```
+/set name My Project          # Change project name
+/set interval 30              # Snapshot every 30 seconds
+/set retention 90             # Keep 90 days of images
+/set ftp.enabled true         # Enable FTP uploads
+/set ftp.host ftp.example.com # Set FTP hostname
+/set telegram.daily_hour 9    # Daily report at 9 AM
+/set teams.enabled true       # Enable Teams notifications
+/set teams.hours 8,12,18      # Teams messages at 8am, 12pm, 6pm
+```
+
+Changes are applied immediately without requiring a service restart.
+
+### Microsoft Teams Setup (Optional)
+
+**Create a Teams Webhook:**
+1. In Microsoft Teams, go to the channel where you want notifications
+2. Click the `...` menu next to the channel name
+3. Select **Connectors** (or **Workflows** in newer Teams)
+4. Search for **Incoming Webhook** and click **Configure**
+5. Give your webhook a name (e.g., "Timelapse Bot") and optionally upload an icon
+6. Click **Create** and copy the webhook URL
+7. Paste the URL into `teams.webhook_url` in your config
+
+**Configure scheduling:**
+
+- `schedule_hours`: Array of hours (24h format) to send messages. Default: `[8, 12, 18]` (8am, 12pm, 6pm)
+- `interval_minutes`: Set to a number > 0 to send every N minutes instead of at specific hours. Default: `0` (disabled)
+
+**Message template variables:**
+
+Customize `message_template` using these placeholders:
+- `{project_name}` - Your project name
+- `{count}` - Number of snapshots today
+- `{size_mb}` - Total size in MB
+- `{disk_free_gb}` - Free disk space in GB
+- `{disk_used_percent}` - Disk usage percentage
+- `{date}` - Current date (YYYY-MM-DD)
+- `{time}` - Current time (HH:MM:SS)
+- `{datetime}` - Full timestamp
+
+Example template:
+```
+"message_template": "📸 {project_name}: {count} snapshots captured. {disk_free_gb} GB free."
+```
 
 ## Dashboard Features
 

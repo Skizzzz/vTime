@@ -19,5 +19,12 @@
     "bot_token": "YOUR_BOT_TOKEN",
     "chat_id": "YOUR_CHAT_ID",
     "daily_report_hour": 8
+  },
+  "teams": {
+    "enabled": false,
+    "webhook_url": "https://outlook.office.com/webhook/YOUR_WEBHOOK_URL",
+    "message_template": "📸 {project_name} status: {count} snapshots captured today ({size_mb} MB). Disk: {disk_free_gb} GB free.",
+    "schedule_hours": [8, 12, 18],
+    "interval_minutes": 0
   }
 }
