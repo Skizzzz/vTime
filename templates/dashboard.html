@@ -662,6 +662,81 @@
         .remote-folder:last-child {
             border-bottom: none;
         }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #1e2125;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .toggle-label {
+            font-weight: 500;
+        }
+
+        .toggle-sublabel {
+            font-size: 0.8rem;
+            color: #71767b;
+            margin-top: 2px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #536471;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #00ba7c;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .ftp-disabled-notice {
+            background: #ffd40022;
+            border: 1px solid #ffd400;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            color: #ffd400;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -935,6 +1010,17 @@
         <div class="config-modal" onclick="event.stopPropagation()">
             <h2 style="margin-bottom: 20px;">FTP Configuration</h2>
             <form id="ftpConfigForm" onsubmit="saveFtpConfig(event)">
+                <div class="toggle-container">
+                    <div>
+                        <div class="toggle-label">Enable FTP Uploads</div>
+                        <div class="toggle-sublabel">When disabled, images are stored locally only</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="ftpFormEnabled" onchange="toggleFtpFields()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="ftpFieldsContainer">
                 <div class="form-row">
                     <div class="form-group">
                         <label>Host</label>
@@ -971,6 +1057,7 @@
                         <label>Upload Interval (minutes)</label>
                         <input type="number" id="ftpFormInterval" min="1" max="1440" value="60" required>
                     </div>
+                </div>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeFtpConfig()">Cancel</button>
@@ -1193,24 +1280,39 @@
         }
 
         // FTP Functions
+        let ftpEnabled = true;
+
         async function loadFtpStatus() {
             try {
                 const response = await fetch('/api/ftp/status');
                 const data = await response.json();
 
+                ftpEnabled = data.enabled;
+
                 // Update overview FTP status
-                document.getElementById('ftpHost').textContent = data.config.host;
+                if (data.enabled) {
+                    document.getElementById('ftpHost').textContent = data.config.host;
+                    document.getElementById('ftpStatusText').textContent = 'Enabled';
+                    document.getElementById('ftpStatusIcon').className = 'ftp-status-icon unknown';
+                } else {
+                    document.getElementById('ftpHost').textContent = 'Disabled';
+                    document.getElementById('ftpStatusText').textContent = 'Local storage only';
+                    document.getElementById('ftpStatusIcon').className = 'ftp-status-icon disconnected';
+                }
                 document.getElementById('ftpUploaded').textContent = formatNumber(data.uploads.total_uploaded);
-                document.getElementById('ftpPending').textContent = formatNumber(data.uploads.total_pending);
+                document.getElementById('ftpPending').textContent = data.enabled ? formatNumber(data.uploads.total_pending) : '--';
 
                 // Update FTP tab
                 document.getElementById('ftpTotalUploaded').textContent = formatNumber(data.uploads.total_uploaded);
-                document.getElementById('ftpTotalPending').textContent = formatNumber(data.uploads.total_pending);
-                document.getElementById('ftpConnectionHost').textContent = `${data.config.host}:${data.config.port}`;
+                document.getElementById('ftpTotalPending').textContent = data.enabled ? formatNumber(data.uploads.total_pending) : '--';
+                document.getElementById('ftpConnectionHost').textContent = data.enabled ? `${data.config.host}:${data.config.port}` : 'FTP Disabled';
+                document.getElementById('ftpConnectionInfo').textContent = data.enabled ? 'Click "Test Connection" to check' : 'FTP uploads are disabled';
 
                 // Update upload stats table
                 const tbody = document.getElementById('uploadStatsBody');
-                if (data.uploads.by_date.length === 0) {
+                if (!data.enabled) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #ffd400;">FTP uploads disabled - images stored locally only</td></tr>';
+                } else if (data.uploads.by_date.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #71767b;">No data available</td></tr>';
                 } else {
                     tbody.innerHTML = data.uploads.by_date.map(d => `
@@ -1235,23 +1337,34 @@
                 const response = await fetch('/api/ftp/config');
                 const data = await response.json();
 
-                document.getElementById('configHost').textContent = data.host;
-                document.getElementById('configPort').textContent = data.port;
-                document.getElementById('configUser').textContent = data.user;
-                document.getElementById('configRemotePath').textContent = data.remote_root;
-                document.getElementById('configPassive').textContent = data.passive_mode ? 'Enabled' : 'Disabled';
-                document.getElementById('configInterval').textContent = data.upload_interval_minutes + ' min';
+                const isEnabled = data.enabled !== false;
+                document.getElementById('configHost').textContent = isEnabled ? data.host : 'Disabled';
+                document.getElementById('configPort').textContent = isEnabled ? data.port : '--';
+                document.getElementById('configUser').textContent = isEnabled ? data.user : '--';
+                document.getElementById('configRemotePath').textContent = isEnabled ? data.remote_root : '--';
+                document.getElementById('configPassive').textContent = isEnabled ? (data.passive_mode ? 'Enabled' : 'Disabled') : '--';
+                document.getElementById('configInterval').textContent = isEnabled ? (data.upload_interval_minutes + ' min') : '--';
 
                 // Pre-fill form
+                document.getElementById('ftpFormEnabled').checked = isEnabled;
                 document.getElementById('ftpFormHost').value = data.host;
                 document.getElementById('ftpFormPort').value = data.port;
                 document.getElementById('ftpFormUser').value = data.user;
                 document.getElementById('ftpFormRemoteRoot').value = data.remote_root;
                 document.getElementById('ftpFormPassive').value = data.passive_mode ? 'true' : 'false';
                 document.getElementById('ftpFormInterval').value = data.upload_interval_minutes;
+
+                toggleFtpFields();
             } catch (error) {
                 console.error('Error loading FTP config:', error);
             }
+        }
+
+        function toggleFtpFields() {
+            const enabled = document.getElementById('ftpFormEnabled').checked;
+            const container = document.getElementById('ftpFieldsContainer');
+            container.style.opacity = enabled ? '1' : '0.5';
+            container.style.pointerEvents = enabled ? 'auto' : 'none';
         }
 
         async function testFtpConnection() {
@@ -1359,6 +1472,7 @@
             e.preventDefault();
 
             const data = {
+                enabled: document.getElementById('ftpFormEnabled').checked,
                 host: document.getElementById('ftpFormHost').value,
                 port: parseInt(document.getElementById('ftpFormPort').value),
                 user: document.getElementById('ftpFormUser').value,

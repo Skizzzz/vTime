@@ -32,6 +32,7 @@ base_output_dir = config.get("base_output_dir", "./pics")
 
 # FTP Settings
 ftp_config = config.get("ftp", {})
+FTP_ENABLED = ftp_config.get("enabled", True)  # Default True for backward compatibility
 FTP_HOST = ftp_config.get("host", "")
 FTP_USER = ftp_config.get("user", "")
 FTP_PASS = ftp_config.get("password", "")
@@ -399,7 +400,10 @@ startup_msg = f"<b>🚀 {PROJECT_NAME} Started</b>\n\n"
 startup_msg += "✅ Service started successfully\n"
 startup_msg += f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
 startup_msg += f"📸 Snapshot interval: {snapshot_interval} seconds\n"
-startup_msg += f"☁️ FTP upload: Every {upload_interval_minutes} minutes\n"
+if FTP_ENABLED:
+    startup_msg += f"☁️ FTP upload: Every {upload_interval_minutes} minutes\n"
+else:
+    startup_msg += "☁️ FTP upload: Disabled (local storage only)\n"
 startup_msg += f"📊 Daily report: {DAILY_REPORT_HOUR}:00 AM\n"
 startup_msg += f"🗑️ Retention: {retention_days} days"
 send_telegram_message(startup_msg)
@@ -497,8 +501,8 @@ while True:
 
         last_snapshot_time = now
 
-    # Upload every N minutes (60 for hourly)
-    if (now - last_upload_time) >= timedelta(minutes=upload_interval_minutes):
+    # Upload every N minutes (60 for hourly) - only if FTP is enabled
+    if FTP_ENABLED and (now - last_upload_time) >= timedelta(minutes=upload_interval_minutes):
         remote_path = f"{REMOTE_ROOT}/{today_str}"
         try:
             upload_folder_to_ftp(current_output_dir, remote_path)

@@ -23,6 +23,7 @@ DEFAULT_CONFIG = {
     "snapshot_interval": 60,
     "retention_days": 60,
     "ftp": {
+        "enabled": True,
         "host": "ftp.example.com",
         "port": 21,
         "user": "ftpuser",
@@ -514,6 +515,7 @@ def api_ftp_status():
     upload_stats = get_ftp_upload_stats()
 
     return jsonify({
+        "enabled": ftp_conf.get('enabled', True),
         "config": {
             "host": ftp_conf['host'],
             "port": ftp_conf.get('port', 21),
@@ -548,6 +550,7 @@ def api_ftp_config_get():
     ftp_conf = get_ftp_config()
     # Return config without password for security
     return jsonify({
+        "enabled": ftp_conf.get('enabled', True),
         "host": ftp_conf['host'],
         "port": ftp_conf.get('port', 21),
         "user": ftp_conf['user'],
@@ -568,6 +571,8 @@ def api_ftp_config_save():
 
     # Update FTP config
     ftp_conf = config.get('ftp', {})
+    if 'enabled' in data:
+        ftp_conf['enabled'] = bool(data['enabled'])
     if 'host' in data:
         ftp_conf['host'] = data['host']
     if 'port' in data:
