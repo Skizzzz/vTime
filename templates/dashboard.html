@@ -755,6 +755,7 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('overview')">Overview</button>
             <button class="tab" onclick="switchTab('ftp')">FTP Uploads</button>
+            <button class="tab" onclick="switchTab('teams')">Teams</button>
             <button class="tab" onclick="switchTab('gallery')">Gallery</button>
         </div>
 
@@ -960,6 +961,73 @@
             </div>
         </div>
 
+        <!-- Teams Tab -->
+        <div id="tab-teams" class="tab-content">
+            <div class="dashboard-grid">
+                <main>
+                    <!-- Teams Connection Test -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="card-header">
+                            <h2 class="card-title">Teams Webhook</h2>
+                            <button class="btn btn-small" onclick="testTeamsConnection()">Test Connection</button>
+                        </div>
+                        <div id="teamsTestResult" style="padding: 16px; border-radius: 8px; background: #1e2125; margin-top: 12px; display: none;">
+                            <div id="teamsTestContent"></div>
+                        </div>
+                    </div>
+
+                    <!-- Teams Schedule Info -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Schedule</h2>
+                        </div>
+                        <div id="teamsScheduleInfo" style="font-size: 0.9rem;">
+                            <div style="padding: 12px; background: #1e2125; border-radius: 8px; margin-bottom: 12px;">
+                                <div style="color: #71767b; margin-bottom: 8px;">Scheduled Hours</div>
+                                <div id="teamsScheduleHours" style="font-size: 1.1rem;">--</div>
+                            </div>
+                            <div style="padding: 12px; background: #1e2125; border-radius: 8px;">
+                                <div style="color: #71767b; margin-bottom: 8px;">Interval Mode</div>
+                                <div id="teamsIntervalMode" style="font-size: 1.1rem;">--</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 16px; padding: 12px; background: #1d9bf01a; border-radius: 8px; font-size: 0.85rem; color: #71767b;">
+                            <strong style="color: #1d9bf0;">Template Variables:</strong><br>
+                            <code>{project_name}</code>, <code>{count}</code>, <code>{size_mb}</code>, <code>{disk_free_gb}</code>, <code>{disk_used_percent}</code>, <code>{date}</code>, <code>{time}</code>, <code>{datetime}</code>
+                        </div>
+                    </div>
+                </main>
+
+                <aside>
+                    <!-- Teams Configuration Summary -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Configuration</h2>
+                            <button class="btn btn-small btn-secondary" onclick="openTeamsConfig()">Edit</button>
+                        </div>
+                        <div id="teamsConfigSummary" style="font-size: 0.9rem;">
+                            <div style="padding: 8px 0; border-bottom: 1px solid #2f3336;">
+                                <span style="color: #71767b;">Status:</span>
+                                <span id="teamsConfigEnabled" style="float: right;">--</span>
+                            </div>
+                            <div style="padding: 8px 0; border-bottom: 1px solid #2f3336;">
+                                <span style="color: #71767b;">Webhook:</span>
+                                <span id="teamsConfigWebhook" style="float: right;">--</span>
+                            </div>
+                            <div style="padding: 8px 0; border-bottom: 1px solid #2f3336;">
+                                <span style="color: #71767b;">Schedule:</span>
+                                <span id="teamsConfigSchedule" style="float: right;">--</span>
+                            </div>
+                            <div style="padding: 8px 0;">
+                                <span style="color: #71767b;">Interval:</span>
+                                <span id="teamsConfigInterval" style="float: right;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
         <!-- Gallery Tab -->
         <div id="tab-gallery" class="tab-content">
             <div class="dashboard-grid">
@@ -1067,6 +1135,52 @@
         </div>
     </div>
 
+    <!-- Teams Config Modal -->
+    <div class="modal" id="teamsConfigModal" onclick="closeTeamsConfig()">
+        <div class="config-modal" onclick="event.stopPropagation()">
+            <h2 style="margin-bottom: 20px;">Teams Configuration</h2>
+            <form id="teamsConfigForm" onsubmit="saveTeamsConfig(event)">
+                <div class="toggle-container">
+                    <div>
+                        <div class="toggle-label">Enable Teams Notifications</div>
+                        <div class="toggle-sublabel">Send scheduled messages to Microsoft Teams</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="teamsFormEnabled" onchange="toggleTeamsFields()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="teamsFieldsContainer">
+                    <div class="form-group">
+                        <label>Webhook URL</label>
+                        <input type="url" id="teamsFormWebhook" placeholder="https://outlook.office.com/webhook/...">
+                    </div>
+                    <div class="form-group">
+                        <label>Message Template</label>
+                        <textarea id="teamsFormTemplate" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Schedule Hours (comma-separated)</label>
+                            <input type="text" id="teamsFormHours" placeholder="8,12,18">
+                        </div>
+                        <div class="form-group">
+                            <label>Interval (minutes, 0=use hours)</label>
+                            <input type="number" id="teamsFormInterval" min="0" max="1440" value="0">
+                        </div>
+                    </div>
+                    <div style="margin-top: 8px; padding: 12px; background: #1e2125; border-radius: 8px; font-size: 0.85rem; color: #71767b;">
+                        <strong>Note:</strong> If interval &gt; 0, messages are sent every N minutes. If interval = 0, messages are sent at the specified hours.
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeTeamsConfig()">Cancel</button>
+                    <button type="submit" class="btn">Save Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
@@ -1094,12 +1208,15 @@
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-            document.querySelector(`.tab:nth-child(${tab === 'overview' ? 1 : tab === 'ftp' ? 2 : 3})`).classList.add('active');
+            const tabIndex = {overview: 1, ftp: 2, teams: 3, gallery: 4}[tab] || 1;
+            document.querySelector(`.tab:nth-child(${tabIndex})`).classList.add('active');
             document.getElementById(`tab-${tab}`).classList.add('active');
 
             if (tab === 'ftp') {
                 loadFtpStatus();
                 loadFtpConfig();
+            } else if (tab === 'teams') {
+                loadTeamsConfig();
             } else if (tab === 'gallery') {
                 loadGalleryDates();
                 loadGallery(currentDate);
@@ -1503,6 +1620,118 @@
             }
         }
 
+        // Teams Functions
+        async function loadTeamsConfig() {
+            try {
+                const response = await fetch('/api/teams/config');
+                const data = await response.json();
+
+                // Update summary display
+                document.getElementById('teamsConfigEnabled').innerHTML = data.enabled
+                    ? '<span style="color: #00ba7c;">Enabled</span>'
+                    : '<span style="color: #71767b;">Disabled</span>';
+                document.getElementById('teamsConfigWebhook').textContent = data.webhook_url
+                    ? (data.webhook_url.substring(0, 30) + '...')
+                    : 'Not set';
+                document.getElementById('teamsConfigSchedule').textContent = data.schedule_hours.join(', ') + ':00';
+                document.getElementById('teamsConfigInterval').textContent = data.interval_minutes > 0
+                    ? `${data.interval_minutes} min`
+                    : 'Off (use hours)';
+
+                // Update schedule info
+                document.getElementById('teamsScheduleHours').textContent = data.schedule_hours.map(h => `${h}:00`).join(', ');
+                document.getElementById('teamsIntervalMode').textContent = data.interval_minutes > 0
+                    ? `Every ${data.interval_minutes} minutes`
+                    : 'Disabled (using scheduled hours)';
+
+                // Update form fields
+                document.getElementById('teamsFormEnabled').checked = data.enabled;
+                document.getElementById('teamsFormWebhook').value = data.webhook_url || '';
+                document.getElementById('teamsFormTemplate').value = data.message_template || '';
+                document.getElementById('teamsFormHours').value = data.schedule_hours.join(',');
+                document.getElementById('teamsFormInterval').value = data.interval_minutes || 0;
+
+                toggleTeamsFields();
+            } catch (error) {
+                console.error('Error loading Teams config:', error);
+            }
+        }
+
+        function toggleTeamsFields() {
+            const enabled = document.getElementById('teamsFormEnabled').checked;
+            document.getElementById('teamsFieldsContainer').style.opacity = enabled ? '1' : '0.5';
+        }
+
+        function openTeamsConfig() {
+            loadTeamsConfig();
+            document.getElementById('teamsConfigModal').classList.add('active');
+        }
+
+        function closeTeamsConfig() {
+            document.getElementById('teamsConfigModal').classList.remove('active');
+        }
+
+        async function saveTeamsConfig(e) {
+            e.preventDefault();
+
+            const data = {
+                enabled: document.getElementById('teamsFormEnabled').checked,
+                webhook_url: document.getElementById('teamsFormWebhook').value,
+                message_template: document.getElementById('teamsFormTemplate').value,
+                schedule_hours: document.getElementById('teamsFormHours').value,
+                interval_minutes: parseInt(document.getElementById('teamsFormInterval').value) || 0
+            };
+
+            try {
+                const response = await fetch('/api/teams/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('Teams configuration saved!', 'success');
+                    closeTeamsConfig();
+                    loadTeamsConfig();
+                } else {
+                    showToast('Error: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showToast('Error saving Teams configuration', 'error');
+            }
+        }
+
+        async function testTeamsConnection() {
+            const resultDiv = document.getElementById('teamsTestResult');
+            const contentDiv = document.getElementById('teamsTestContent');
+
+            resultDiv.style.display = 'block';
+            contentDiv.innerHTML = '<div style="color: #71767b;">Testing connection...</div>';
+
+            try {
+                const response = await fetch('/api/teams/test', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.success) {
+                    contentDiv.innerHTML = `
+                        <div style="color: #00ba7c; font-weight: 600; margin-bottom: 8px;">✓ Connection Successful</div>
+                        <div style="color: #71767b;">${result.message}</div>
+                    `;
+                } else {
+                    contentDiv.innerHTML = `
+                        <div style="color: #f4212e; font-weight: 600; margin-bottom: 8px;">✗ Connection Failed</div>
+                        <div style="color: #71767b;">${result.error}</div>
+                    `;
+                }
+            } catch (error) {
+                contentDiv.innerHTML = `
+                    <div style="color: #f4212e; font-weight: 600; margin-bottom: 8px;">✗ Error</div>
+                    <div style="color: #71767b;">${error.message}</div>
+                `;
+            }
+        }
+
         // Modal
         function openModal(date, filename, timestamp) {
             document.getElementById('modalImage').src = `/api/image/${date}/${filename}`;
@@ -1518,6 +1747,7 @@
             if (e.key === 'Escape') {
                 closeModal();
                 closeFtpConfig();
+                closeTeamsConfig();
             }
         });
 

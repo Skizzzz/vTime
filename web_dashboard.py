@@ -31,6 +31,13 @@ DEFAULT_CONFIG = {
         "remote_root": "/timelapse",
         "passive_mode": True,
         "upload_interval_minutes": 60
+    },
+    "teams": {
+        "enabled": False,
+        "webhook_url": "",
+        "message_template": "📸 {project_name} status: {count} snapshots today ({size_mb} MB). Disk: {disk_free_gb} GB free.",
+        "schedule_hours": [8, 12, 18],
+        "interval_minutes": 0
     }
 }
 
@@ -52,6 +59,12 @@ def load_config():
                 for key in DEFAULT_CONFIG['ftp']:
                     if key not in config['ftp']:
                         config['ftp'][key] = DEFAULT_CONFIG['ftp'][key]
+            if 'teams' not in config:
+                config['teams'] = DEFAULT_CONFIG['teams'].copy()
+            else:
+                for key in DEFAULT_CONFIG['teams']:
+                    if key not in config['teams']:
+                        config['teams'][key] = DEFAULT_CONFIG['teams'][key]
             return config
     except json.JSONDecodeError as e:
         print(f"[ERROR] Invalid JSON in {CONFIG_FILE}: {e}")
@@ -80,6 +93,9 @@ def get_retention_days():
 
 def get_ftp_config():
     return config.get('ftp', DEFAULT_CONFIG['ftp'])
+
+def get_teams_config():
+    return config.get('teams', DEFAULT_CONFIG['teams'])
 
 def get_project_name():
     return config.get('project_name', DEFAULT_CONFIG['project_name'])
@@ -606,6 +622,130 @@ def api_project_name_save():
     save_config(config)
 
     return jsonify({"success": True, "name": config['project_name']})
+
+# === TEAMS API ROUTES ===
+
+@app.route('/api/teams/config', methods=['GET'])
+def api_teams_config_get():
+    """Get Teams configuration"""
+    teams_conf = get_teams_config()
+    return jsonify({
+        "enabled": teams_conf.get('enabled', False),
+        "webhook_url": teams_conf.get('webhook_url', ''),
+        "message_template": teams_conf.get('message_template', ''),
+        "schedule_hours": teams_conf.get('schedule_hours', [8, 12, 18]),
+        "interval_minutes": teams_conf.get('interval_minutes', 0)
+    })
+
+@app.route('/api/teams/config', methods=['POST'])
+def api_teams_config_save():
+    """Save Teams configuration"""
+    global config
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"success": False, "error": "No data provided"}), 400
+
+    # Update Teams config
+    teams_conf = config.get('teams', {})
+    if 'enabled' in data:
+        teams_conf['enabled'] = bool(data['enabled'])
+    if 'webhook_url' in data:
+        teams_conf['webhook_url'] = data['webhook_url']
+    if 'message_template' in data:
+        teams_conf['message_template'] = data['message_template']
+    if 'schedule_hours' in data:
+        # Parse schedule hours - accept string like "8,12,18" or array
+        hours = data['schedule_hours']
+        if isinstance(hours, str):
+            teams_conf['schedule_hours'] = [int(h.strip()) for h in hours.split(',') if h.strip()]
+        else:
+            teams_conf['schedule_hours'] = [int(h) for h in hours]
+    if 'interval_minutes' in data:
+        teams_conf['interval_minutes'] = int(data['interval_minutes'])
+
+    config['teams'] = teams_conf
+    save_config(config)
+
+    return jsonify({"success": True, "message": "Teams configuration saved"})
+
+@app.route('/api/teams/test', methods=['POST'])
+def api_teams_test():
+    """Send a test message to Teams webhook"""
+    import requests as req
+
+    teams_conf = get_teams_config()
+
+    if not teams_conf.get('webhook_url'):
+        return jsonify({"success": False, "error": "No webhook URL configured"})
+
+    # Get current stats for the test message
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    today_dir = os.path.join(get_base_output_dir(), today_str)
+    stats = get_folder_stats(today_dir)
+    system_stats = get_system_stats()
+
+    # Format message using template
+    try:
+        message = teams_conf.get('message_template', 'Test message').format(
+            project_name=get_project_name(),
+            count=stats['count'],
+            size_mb=f"{stats['size_mb']:.1f}",
+            disk_free_gb=f"{system_stats['disk_free_gb']:.1f}",
+            disk_used_percent=f"{system_stats['disk_used_percent']:.1f}",
+            date=today_str,
+            time=now.strftime('%H:%M:%S'),
+            datetime=now.strftime('%Y-%m-%d %H:%M:%S')
+        )
+    except KeyError as e:
+        message = f"Test message from {get_project_name()} (template error: {e})"
+
+    # Teams webhook payload (Adaptive Card format)
+    payload = {
+        "type": "message",
+        "attachments": [
+            {
+                "contentType": "application/vnd.microsoft.card.adaptive",
+                "content": {
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "type": "AdaptiveCard",
+                    "version": "1.4",
+                    "body": [
+                        {
+                            "type": "TextBlock",
+                            "text": f"📸 {get_project_name()} - Test",
+                            "weight": "Bolder",
+                            "size": "Medium"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": message,
+                            "wrap": True
+                        },
+                        {
+                            "type": "FactSet",
+                            "facts": [
+                                {"title": "Snapshots Today", "value": str(stats['count'])},
+                                {"title": "Size", "value": f"{stats['size_mb']:.1f} MB"},
+                                {"title": "Disk Free", "value": f"{system_stats['disk_free_gb']:.1f} GB"},
+                                {"title": "Time", "value": now.strftime('%Y-%m-%d %H:%M:%S')}
+                            ]
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+
+    try:
+        response = req.post(teams_conf['webhook_url'], json=payload, timeout=10)
+        if response.status_code in [200, 202]:
+            return jsonify({"success": True, "message": "Test message sent successfully"})
+        else:
+            return jsonify({"success": False, "error": f"HTTP {response.status_code}: {response.text}"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 # === MAIN ===
 
