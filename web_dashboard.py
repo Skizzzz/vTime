@@ -23,7 +23,7 @@ DEFAULT_CONFIG = {
     "snapshot_interval": 60,
     "retention_days": 60,
     "ftp": {
-        "enabled": True,
+        "enabled": False,
         "host": "ftp.example.com",
         "port": 21,
         "user": "ftpuser",

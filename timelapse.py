@@ -32,11 +32,11 @@ base_output_dir = config.get("base_output_dir", "./pics")
 
 # FTP Settings
 ftp_config = config.get("ftp", {})
-FTP_ENABLED = ftp_config.get("enabled", True)  # Default True for backward compatibility
+FTP_ENABLED = ftp_config.get("enabled", False)  # Default False - local storage only
 FTP_HOST = ftp_config.get("host", "")
 FTP_USER = ftp_config.get("user", "")
 FTP_PASS = ftp_config.get("password", "")
-REMOTE_ROOT = ftp_config.get("remote_root", "files")
+REMOTE_ROOT = ftp_config.get("remote_root", "/timelapse")
 
 # Retention
 retention_days = config.get("retention_days", 60)
