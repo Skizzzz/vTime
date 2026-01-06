@@ -20,8 +20,9 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configuration
-INSTALL_DIR="/home/$(whoami)/timelapse"
+# Configuration - use the directory where setup.sh is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_DIR="$SCRIPT_DIR"
 SERVICE_USER=$(whoami)
 DASHBOARD_PORT=5050
 
@@ -41,44 +42,25 @@ if [[ ! -f /proc/device-tree/model ]] || ! grep -q "Raspberry Pi" /proc/device-t
     fi
 fi
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-echo -e "${GREEN}[1/7]${NC} Updating system packages..."
+echo -e "${GREEN}[1/6]${NC} Updating system packages..."
 sudo apt-get update -qq
 
-echo -e "${GREEN}[2/7]${NC} Installing dependencies..."
+echo -e "${GREEN}[2/6]${NC} Installing dependencies..."
 sudo apt-get install -y -qq python3 python3-pip python3-venv ffmpeg
 
-echo -e "${GREEN}[3/7]${NC} Creating installation directory..."
-mkdir -p "$INSTALL_DIR"
+echo -e "${GREEN}[3/6]${NC} Creating required directories..."
 mkdir -p "$INSTALL_DIR/pics"
 mkdir -p "$INSTALL_DIR/templates"
 mkdir -p "$INSTALL_DIR/static"
 
-echo -e "${GREEN}[4/7]${NC} Copying application files..."
-cp "$SCRIPT_DIR/timelapse.py" "$INSTALL_DIR/"
-cp "$SCRIPT_DIR/web_dashboard.py" "$INSTALL_DIR/"
-cp "$SCRIPT_DIR/templates/dashboard.html" "$INSTALL_DIR/templates/"
-
-# Copy config template
-if [[ -f "$SCRIPT_DIR/dashboard_config.example.json" ]]; then
-    cp "$SCRIPT_DIR/dashboard_config.example.json" "$INSTALL_DIR/"
-fi
-
-# Copy user config if it exists (for upgrades)
-if [[ -f "$SCRIPT_DIR/dashboard_config.json" ]]; then
-    cp "$SCRIPT_DIR/dashboard_config.json" "$INSTALL_DIR/"
-fi
-
-echo -e "${GREEN}[5/7]${NC} Setting up Python virtual environment..."
+echo -e "${GREEN}[4/6]${NC} Setting up Python virtual environment..."
 cd "$INSTALL_DIR"
 python3 -m venv venv
 source venv/bin/activate
 pip install --quiet --upgrade pip
 pip install --quiet flask requests
 
-echo -e "${GREEN}[6/7]${NC} Creating systemd services..."
+echo -e "${GREEN}[5/6]${NC} Creating systemd services..."
 
 # Create timelapse capture service
 sudo tee /etc/systemd/system/timelapse-capture.service > /dev/null << EOF
@@ -130,7 +112,7 @@ StartLimitBurst=5
 WantedBy=multi-user.target
 EOF
 
-echo -e "${GREEN}[7/7]${NC} Enabling services..."
+echo -e "${GREEN}[6/6]${NC} Enabling services..."
 sudo systemctl daemon-reload
 sudo systemctl enable timelapse-capture.service
 sudo systemctl enable timelapse-dashboard.service

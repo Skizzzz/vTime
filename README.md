@@ -45,13 +45,13 @@ cd ~/vTime
 ./setup.sh
 ```
 
-This installs dependencies, creates `/home/<user>/timelapse`, and configures systemd services.
+This installs dependencies and configures systemd services to run from the cloned directory.
 
 ### 3. Configure
 
 ```bash
-cp ~/timelapse/dashboard_config.example.json ~/timelapse/dashboard_config.json
-nano ~/timelapse/dashboard_config.json
+cp dashboard_config.example.json dashboard_config.json
+nano dashboard_config.json
 ```
 
 Edit RTSP URL, FTP credentials, Telegram settings, and other options.
@@ -90,6 +90,7 @@ Copy `dashboard_config.example.json` to `dashboard_config.json` and edit:
   "snapshot_interval": 60,
   "retention_days": 60,
   "ftp": {
+    "enabled": false,
     "host": "ftp.example.com",
     "port": 21,
     "user": "ftpuser",
@@ -106,6 +107,8 @@ Copy `dashboard_config.example.json` to `dashboard_config.json` and edit:
   }
 }
 ```
+
+FTP is disabled by default - images are stored locally. Enable when ready to sync to a remote server.
 
 ### Telegram Setup (Optional)
 
@@ -129,7 +132,7 @@ Copy `dashboard_config.example.json` to `dashboard_config.json` and edit:
 ## File Structure
 
 ```
-~/timelapse/
+vTime/
 ├── pics/                    # Snapshots organized by date
 │   └── YYYY-MM-DD/
 │       └── snapshot_*.jpg
@@ -137,7 +140,9 @@ Copy `dashboard_config.example.json` to `dashboard_config.json` and edit:
 │   └── dashboard.html
 ├── timelapse.py             # Main capture script
 ├── web_dashboard.py         # Flask dashboard
-└── dashboard_config.json    # Configuration
+├── dashboard_config.json    # Your configuration (gitignored)
+├── setup.sh                 # Raspberry Pi setup script
+└── manage.sh                # Service management script
 ```
 
 ## License
