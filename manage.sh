@@ -65,7 +65,7 @@ case "$1" in
             sudo rm -f /etc/systemd/system/timelapse-capture.service
             sudo rm -f /etc/systemd/system/timelapse-dashboard.service
             sudo systemctl daemon-reload
-            echo -e "${GREEN}Services removed. Data in ~/timelapse is preserved.${NC}"
+            echo -e "${GREEN}Services removed. Your data (pics/) is preserved.${NC}"
         fi
         ;;
     *)
