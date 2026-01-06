@@ -112,9 +112,27 @@ FTP is disabled by default - images are stored locally. Enable when ready to syn
 
 ### Telegram Setup (Optional)
 
-1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
-2. Get your chat ID from [@userinfobot](https://t.me/userinfobot)
-3. Set `telegram.enabled` to `true` and fill in your credentials
+**Get your Bot Token:**
+1. Open Telegram and search for [@BotFather](https://t.me/BotFather)
+2. Send `/newbot` and follow the prompts to name your bot
+3. BotFather will reply with your bot token (looks like `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+4. Copy this token to `telegram.bot_token` in your config
+
+**Get your Chat ID:**
+1. Search for [@userinfobot](https://t.me/userinfobot) on Telegram
+2. Send any message to it
+3. It will reply with your user ID (a number like `123456789`)
+4. Copy this to `telegram.chat_id` in your config
+
+**Enable notifications:**
+1. Set `telegram.enabled` to `true` in your config
+2. Restart the timelapse service
+3. Send `/help` to your bot to verify it's working
+
+**Available bot commands:**
+- `/status` - Get current system status with latest photo
+- `/photo` - Take and send a snapshot immediately
+- `/help` - Show available commands
 
 ## Dashboard Features
 
