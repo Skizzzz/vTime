@@ -52,14 +52,6 @@ TELEGRAM_ENABLED = telegram_config.get("enabled", False)
 # Project name for messages
 PROJECT_NAME = config.get("project_name", "Timelapse")
 
-# Teams Webhook Settings
-teams_config = config.get("teams", {})
-TEAMS_ENABLED = teams_config.get("enabled", False)
-TEAMS_WEBHOOK_URL = teams_config.get("webhook_url", "")
-TEAMS_MESSAGE_TEMPLATE = teams_config.get("message_template", "📸 {project_name} is running. Snapshots today: {count}")
-TEAMS_SCHEDULE_HOURS = teams_config.get("schedule_hours", [8, 12, 18])  # Hours to send messages (24h format)
-TEAMS_INTERVAL_MINUTES = teams_config.get("interval_minutes", 0)  # 0 = use schedule_hours, >0 = send every N minutes
-
 # === FUNCTIONS ===
 
 def save_config(new_config):
@@ -73,7 +65,6 @@ def reload_config():
     global config, rtsp_url, snapshot_interval, base_output_dir, retention_days
     global FTP_ENABLED, FTP_HOST, FTP_USER, FTP_PASS, REMOTE_ROOT, upload_interval_minutes
     global TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, DAILY_REPORT_HOUR, TELEGRAM_ENABLED, PROJECT_NAME
-    global TEAMS_ENABLED, TEAMS_WEBHOOK_URL, TEAMS_MESSAGE_TEMPLATE, TEAMS_SCHEDULE_HOURS, TEAMS_INTERVAL_MINUTES
 
     config = load_config()
 
@@ -97,13 +88,6 @@ def reload_config():
     TELEGRAM_ENABLED = telegram_config.get("enabled", False)
 
     PROJECT_NAME = config.get("project_name", "Timelapse")
-
-    teams_config = config.get("teams", {})
-    TEAMS_ENABLED = teams_config.get("enabled", False)
-    TEAMS_WEBHOOK_URL = teams_config.get("webhook_url", "")
-    TEAMS_MESSAGE_TEMPLATE = teams_config.get("message_template", "📸 {project_name} is running. Snapshots today: {count}")
-    TEAMS_SCHEDULE_HOURS = teams_config.get("schedule_hours", [8, 12, 18])
-    TEAMS_INTERVAL_MINUTES = teams_config.get("interval_minutes", 0)
 
 def take_snapshot(current_dir):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -327,88 +311,6 @@ def send_telegram_alert(alert_type, details):
 
     send_telegram_message(message)
 
-def send_teams_message(message=None, include_stats=True):
-    """Send a message to Microsoft Teams via webhook"""
-    if not TEAMS_ENABLED or not TEAMS_WEBHOOK_URL:
-        return False
-
-    try:
-        # Get current stats if needed
-        now = datetime.now()
-        today_str = now.strftime("%Y-%m-%d")
-        current_dir = os.path.join(base_output_dir, today_str)
-        stats = get_folder_stats(current_dir) if include_stats else {"count": 0, "size_mb": 0}
-
-        # Get disk info
-        try:
-            disk_usage = shutil.disk_usage(base_output_dir)
-            disk_free_gb = disk_usage.free / (1024**3)
-            disk_used_percent = (disk_usage.used / disk_usage.total) * 100
-        except:
-            disk_free_gb = 0
-            disk_used_percent = 0
-
-        # Format message using template or custom message
-        if message is None:
-            message = TEAMS_MESSAGE_TEMPLATE.format(
-                project_name=PROJECT_NAME,
-                count=stats['count'],
-                size_mb=f"{stats['size_mb']:.1f}",
-                disk_free_gb=f"{disk_free_gb:.1f}",
-                disk_used_percent=f"{disk_used_percent:.1f}",
-                date=today_str,
-                time=now.strftime('%H:%M:%S'),
-                datetime=now.strftime('%Y-%m-%d %H:%M:%S')
-            )
-
-        # Teams webhook payload (Adaptive Card format for modern Teams)
-        payload = {
-            "type": "message",
-            "attachments": [
-                {
-                    "contentType": "application/vnd.microsoft.card.adaptive",
-                    "content": {
-                        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-                        "type": "AdaptiveCard",
-                        "version": "1.4",
-                        "body": [
-                            {
-                                "type": "TextBlock",
-                                "text": f"📸 {PROJECT_NAME}",
-                                "weight": "Bolder",
-                                "size": "Medium"
-                            },
-                            {
-                                "type": "TextBlock",
-                                "text": message,
-                                "wrap": True
-                            },
-                            {
-                                "type": "FactSet",
-                                "facts": [
-                                    {"title": "Snapshots Today", "value": str(stats['count'])},
-                                    {"title": "Size", "value": f"{stats['size_mb']:.1f} MB"},
-                                    {"title": "Disk Free", "value": f"{disk_free_gb:.1f} GB"},
-                                    {"title": "Time", "value": now.strftime('%Y-%m-%d %H:%M:%S')}
-                                ]
-                            }
-                        ]
-                    }
-                }
-            ]
-        }
-
-        response = requests.post(TEAMS_WEBHOOK_URL, json=payload, timeout=10)
-        if response.status_code in [200, 202]:
-            print("[Teams] Message sent successfully")
-            return True
-        else:
-            print(f"[Teams] Failed to send message: {response.status_code} - {response.text}")
-            return False
-    except Exception as e:
-        print(f"[Teams] Error sending message: {e}")
-        return False
-
 def get_telegram_updates(offset=None):
     """Get new messages from Telegram bot"""
     if not TELEGRAM_ENABLED:
@@ -512,12 +414,6 @@ def handle_telegram_command(command_text, current_output_dir):
         msg += f"• Enabled: <code>{tg_cfg.get('enabled', False)}</code>\n"
         msg += f"• Daily report hour: <code>{tg_cfg.get('daily_report_hour', 8)}</code>\n\n"
 
-        teams_cfg = config.get('teams', {})
-        msg += f"<b>Teams:</b>\n"
-        msg += f"• Enabled: <code>{teams_cfg.get('enabled', False)}</code>\n"
-        msg += f"• Schedule hours: <code>{teams_cfg.get('schedule_hours', [8, 12, 18])}</code>\n"
-        msg += f"• Interval minutes: <code>{teams_cfg.get('interval_minutes', 0)}</code>\n\n"
-
         msg += "<i>Use /set to modify settings</i>"
         send_telegram_message(msg)
 
@@ -540,13 +436,7 @@ def handle_telegram_command(command_text, current_output_dir):
             msg += "• <code>ftp.remote_root</code> - Remote path\n"
             msg += "• <code>ftp.upload_interval</code> - Minutes between uploads\n\n"
             msg += "<b>Telegram settings:</b>\n"
-            msg += "• <code>telegram.daily_hour</code> - Daily report hour (0-23)\n\n"
-            msg += "<b>Teams settings:</b>\n"
-            msg += "• <code>teams.enabled</code> - true/false\n"
-            msg += "• <code>teams.webhook</code> - Webhook URL\n"
-            msg += "• <code>teams.message</code> - Message template\n"
-            msg += "• <code>teams.hours</code> - Schedule hours (e.g., 8,12,18)\n"
-            msg += "• <code>teams.interval</code> - Interval in minutes (0=use hours)\n"
+            msg += "• <code>telegram.daily_hour</code> - Daily report hour (0-23)\n"
             send_telegram_message(msg)
             return
 
@@ -572,11 +462,6 @@ def handle_telegram_command(command_text, current_output_dir):
                 'ftp.remote_root': ('ftp.remote_root', str),
                 'ftp.upload_interval': ('ftp.upload_interval_minutes', int),
                 'telegram.daily_hour': ('telegram.daily_report_hour', int),
-                'teams.enabled': ('teams.enabled', lambda x: x.lower() == 'true'),
-                'teams.webhook': ('teams.webhook_url', str),
-                'teams.message': ('teams.message_template', str),
-                'teams.hours': ('teams.schedule_hours', lambda x: [int(h.strip()) for h in x.split(',')]),
-                'teams.interval': ('teams.interval_minutes', int),
             }
 
             if key not in key_map:
@@ -606,28 +491,6 @@ def handle_telegram_command(command_text, current_output_dir):
         except Exception as e:
             send_telegram_message(f"❌ Error updating config: {str(e)}")
 
-    elif cmd in ["teams"]:
-        # Teams test command
-        if args.lower() == "test":
-            if not TEAMS_ENABLED:
-                send_telegram_message("❌ Teams is not enabled. Use <code>/set teams.enabled true</code> first.")
-                return
-            if not TEAMS_WEBHOOK_URL:
-                send_telegram_message("❌ Teams webhook URL not set. Use <code>/set teams.webhook &lt;url&gt;</code>")
-                return
-            if send_teams_message("Test message from Telegram bot"):
-                send_telegram_message("✅ Teams test message sent successfully!")
-            else:
-                send_telegram_message("❌ Failed to send Teams message. Check webhook URL.")
-        else:
-            msg = "<b>📣 Teams Commands</b>\n\n"
-            msg += "• <code>/teams test</code> - Send a test message to Teams\n\n"
-            msg += "<b>Configuration:</b>\n"
-            msg += f"• Enabled: <code>{TEAMS_ENABLED}</code>\n"
-            msg += f"• Schedule hours: <code>{TEAMS_SCHEDULE_HOURS}</code>\n"
-            msg += f"• Interval: <code>{TEAMS_INTERVAL_MINUTES}</code> min\n"
-            send_telegram_message(msg)
-
     elif cmd in ["reload"]:
         # Reload configuration from file
         try:
@@ -645,8 +508,6 @@ def handle_telegram_command(command_text, current_output_dir):
         help_msg += "• <code>/config</code> - View current settings\n"
         help_msg += "• <code>/set</code> - Modify settings\n"
         help_msg += "• <code>/reload</code> - Reload config from file\n\n"
-        help_msg += "<b>📣 Integrations:</b>\n"
-        help_msg += "• <code>/teams</code> - Teams webhook commands\n\n"
         help_msg += f"<b>Automatic notifications:</b>\n"
         help_msg += f"• Daily report at {DAILY_REPORT_HOUR}:00\n"
         help_msg += "• Real-time error alerts\n"
@@ -736,17 +597,8 @@ snapshot_error_count = 0
 upload_error_count = 0
 last_update_id = None  # Track last processed Telegram message
 
-# Teams scheduling
-teams_hours_sent = set()  # Track which hours we've sent Teams messages for today
-last_teams_interval_time = datetime.now()  # Track last interval-based Teams message
-
 # Command check interval (seconds) - check for commands more frequently
 command_check_interval = 5
-
-# Send Teams startup message if enabled
-if TEAMS_ENABLED:
-    send_teams_message(f"Service started - {PROJECT_NAME} is now running")
-    print("[Startup] Teams notification sent")
 
 while True:
     now = datetime.now()
@@ -808,24 +660,6 @@ while True:
             if upload_error_count == 3:  # Alert after 3 consecutive upload failures
                 send_telegram_alert("upload_error", f"3 consecutive FTP upload failures: {str(e)}")
         last_upload_time = now
-
-    # Teams scheduled messages
-    if TEAMS_ENABLED:
-        # Reset hours sent tracking at midnight
-        if now.hour == 0 and teams_hours_sent:
-            teams_hours_sent.clear()
-
-        # Interval-based messaging (if configured)
-        if TEAMS_INTERVAL_MINUTES > 0:
-            if (now - last_teams_interval_time) >= timedelta(minutes=TEAMS_INTERVAL_MINUTES):
-                send_teams_message()
-                last_teams_interval_time = now
-                print(f"[Teams] Interval message sent (every {TEAMS_INTERVAL_MINUTES} minutes)")
-        # Hour-based scheduling (default)
-        elif now.hour in TEAMS_SCHEDULE_HOURS and now.hour not in teams_hours_sent:
-            send_teams_message()
-            teams_hours_sent.add(now.hour)
-            print(f"[Teams] Scheduled message sent for hour {now.hour}")
 
     # Daily cleanup
     if now.date() != last_cleanup_date:
